@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Simulateur de Budget - Waterfall</title>
+<title>Simulateur de Budget - Pie Chart</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-body { font-family: Arial, sans-serif; max-width:800px; margin:auto; padding:20px; background:#f5f5f5; }
+body { font-family: Arial, sans-serif; max-width:600px; margin:auto; padding:20px; background:#f5f5f5; }
 h2 { text-align:center; color:#333; }
 label { display:block; margin:10px 0 5px; font-weight:bold; }
 input { width:100%; padding:8px; margin-bottom:10px; border-radius:5px; border:1px solid #ccc; }
@@ -18,7 +18,7 @@ canvas { margin-top:30px; }
 </head>
 <body>
 
-<h2>Simulateur de Budget Mensuel (Waterfall)</h2>
+<h2>Simulateur de Budget Mensuel - Pie Chart</h2>
 
 <h3>Revenus</h3>
 <label>Salaires (€)</label>
@@ -46,94 +46,59 @@ canvas { margin-top:30px; }
 <label>Autres (€)</label>
 <input type="number" id="autres" value="100">
 
-<button onclick="calculerBudget()">Calculer le budget</button>
+<button onclick="calculerPie()">Calculer le budget</button>
 
 <div class="result" id="result"></div>
-<canvas id="budgetGraphique"></canvas>
+<canvas id="budgetPieChart"></canvas>
 
 <script>
-function calculerBudget() {
+function calculerPie() {
     // Revenus
     const salaires = parseFloat(document.getElementById('salaires').value);
     const autresRevenus = parseFloat(document.getElementById('autresrevenus').value);
     const revenuTotal = salaires + autresRevenus;
 
     // Dépenses
-    const logement = parseFloat(document.getElementById('logement').value);
-    const alimentation = parseFloat(document.getElementById('alimentation').value);
-    const transport = parseFloat(document.getElementById('transport').value);
-    const loisir = parseFloat(document.getElementById('loisir').value);
-    const sortie = parseFloat(document.getElementById('sortie').value);
-    const sport = parseFloat(document.getElementById('sport').value);
-    const abonnement = parseFloat(document.getElementById('abonnement').value);
-    const credit = parseFloat(document.getElementById('credit').value);
-    const autres = parseFloat(document.getElementById('autres').value);
+    const depenses = [
+        parseFloat(document.getElementById('logement').value),
+        parseFloat(document.getElementById('alimentation').value),
+        parseFloat(document.getElementById('transport').value),
+        parseFloat(document.getElementById('loisir').value),
+        parseFloat(document.getElementById('sortie').value),
+        parseFloat(document.getElementById('sport').value),
+        parseFloat(document.getElementById('abonnement').value),
+        parseFloat(document.getElementById('credit').value),
+        parseFloat(document.getElementById('autres').value)
+    ];
 
-    const depenses = [logement, alimentation, transport, loisir, sortie, sport, abonnement, credit, autres];
+    const totalDepenses = depenses.reduce((a,b)=>a+b,0);
+    const reste = revenuTotal - totalDepenses;
 
-    const reste = revenuTotal - depenses.reduce((a,b)=>a+b,0);
     document.getElementById('result').innerText = `Reste après dépenses : ${Math.round(reste)} €`;
 
-    // Labels
-    const labels = [
-        'Salaires','Autres revenus','Revenu total',
-        'Logement','Alimentation','Transport','Loisir','Sortie','Sport','Abonnement','Mensualité de crédit','Autres',
-        'Reste'
-    ];
+    const ctx = document.getElementById('budgetPieChart').getContext('2d');
+    if(window.pieChart) window.pieChart.destroy();
 
-    // Valeurs
-    const values = [
-        salaires, autresRevenus, revenuTotal,
-        -logement, -alimentation, -transport, -loisir, -sortie, -sport, -abonnement, -credit, -autres,
-        reste
-    ];
-
-    // Couleurs
-    const colors = [
-        '#4caf50','#66bb6a','#2e7d32', // revenus
-        '#f44336','#f44336','#f44336','#f44336','#f44336','#f44336','#f44336','#f44336','#f44336', // dépenses
-        '#2196f3' // reste
-    ];
-
-    // Calcul des offsets pour waterfall
-    const offsets = [];
-    let cumul = 0;
-    for(let i=0;i<values.length;i++){
-        // Pour Revenu total et Reste, on repart de 0
-        if(labels[i] === 'Revenu total' || labels[i] === 'Reste') {
-            offsets.push(0);
-        } else {
-            offsets.push(cumul);
-            cumul += values[i];
-        }
-    }
-
-    const ctx = document.getElementById('budgetGraphique').getContext('2d');
-    if(window.budgetChart) window.budgetChart.destroy();
-
-    window.budgetChart = new Chart(ctx, {
-        type:'bar',
+    window.pieChart = new Chart(ctx,{
+        type:'pie',
         data:{
-            labels:labels,
-            datasets:[
-                {
-                    label:'Offset',
-                    data: offsets,
-                    backgroundColor:'rgba(0,0,0,0)'
-                },
-                {
-                    label:'Montant (€)',
-                    data: values.map(val=>Math.abs(val)),
-                    backgroundColor: colors
-                }
-            ]
+            labels:['Dépenses','Montant résiduel'],
+            datasets:[{
+                data:[totalDepenses, reste],
+                backgroundColor:['#f44336','#4caf50']
+            }]
         },
         options:{
             responsive:true,
-            plugins:{ legend:{ display:false }},
-            scales:{
-                x:{ stacked:true },
-                y:{ stacked:true, beginAtZero:true, title:{ display:true, text:'Montant (€)' } }
+            plugins:{
+                legend:{ position:'bottom' },
+                tooltip:{
+                    callbacks:{
+                        label: function(context) {
+                            return context.label + ': ' + Math.round(context.raw) + ' €';
+                        }
+                    }
+                }
             }
         }
     });
