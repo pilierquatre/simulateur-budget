@@ -71,18 +71,17 @@ function calculerBudget() {
 
     const depenses = [logement, alimentation, transport, loisir, sortie, sport, abonnement, credit, autres];
 
-    // Labels pour le waterfall
-    const labels = [
-        'Salaires', 'Autres revenus', 'Revenu total',
-        'Logement', 'Alimentation', 'Transport', 'Loisir', 'Sortie', 'Sport', 'Abonnement', 'Mensualité de crédit', 'Autres',
-        'Reste'
-    ];
-
-    // Calcul du reste
     const reste = revenuTotal - depenses.reduce((a,b)=>a+b,0);
     document.getElementById('result').innerText = `Reste après dépenses : ${Math.round(reste)} €`;
 
-    // Valeurs waterfall
+    // Labels
+    const labels = [
+        'Salaires','Autres revenus','Revenu total',
+        'Logement','Alimentation','Transport','Loisir','Sortie','Sport','Abonnement','Mensualité de crédit','Autres',
+        'Reste'
+    ];
+
+    // Valeurs
     const values = [
         salaires, autresRevenus, revenuTotal,
         -logement, -alimentation, -transport, -loisir, -sortie, -sport, -abonnement, -credit, -autres,
@@ -96,15 +95,19 @@ function calculerBudget() {
         '#2196f3' // reste
     ];
 
-    // Offsets cumulés pour waterfall
+    // Calcul des offsets pour waterfall
     const offsets = [];
     let cumul = 0;
     for(let i=0;i<values.length;i++){
-        offsets.push(cumul);
-        cumul += values[i];
+        // Pour Revenu total et Reste, on repart de 0
+        if(labels[i] === 'Revenu total' || labels[i] === 'Reste') {
+            offsets.push(0);
+        } else {
+            offsets.push(cumul);
+            cumul += values[i];
+        }
     }
 
-    // Créer le chart
     const ctx = document.getElementById('budgetGraphique').getContext('2d');
     if(window.budgetChart) window.budgetChart.destroy();
 
@@ -139,4 +142,3 @@ function calculerBudget() {
 
 </body>
 </html>
-
