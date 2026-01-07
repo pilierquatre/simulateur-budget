@@ -6,7 +6,7 @@
 <title>Simulateur de Budget - Waterfall</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-body { font-family: Arial, sans-serif; max-width:700px; margin:auto; padding:20px; background:#f5f5f5; }
+body { font-family: Arial, sans-serif; max-width:800px; margin:auto; padding:20px; background:#f5f5f5; }
 h2 { text-align:center; color:#333; }
 label { display:block; margin:10px 0 5px; font-weight:bold; }
 input { width:100%; padding:8px; margin-bottom:10px; border-radius:5px; border:1px solid #ccc; }
@@ -23,25 +23,28 @@ canvas { margin-top:30px; }
 <h3>Revenus</h3>
 <label>Salaires (€)</label>
 <input type="number" id="salaires" value="2500">
-
 <label>Autres revenus (€)</label>
 <input type="number" id="autresrevenus" value="500">
 
 <h3>Dépenses</h3>
-<label>Dépenses logement (€)</label>
+<label>Logement (€)</label>
 <input type="number" id="logement" value="1000">
-
-<label>Dépenses alimentation (€)</label>
+<label>Alimentation (€)</label>
 <input type="number" id="alimentation" value="500">
-
-<label>Dépenses transport (€)</label>
+<label>Transport (€)</label>
 <input type="number" id="transport" value="300">
-
-<label>Autres dépenses (€)</label>
-<input type="number" id="autres" value="200">
-
-<label>Loisir / sorties / sport / abonnements / crédit (€)</label>
-<input type="number" id="loisir" value="400">
+<label>Loisir (€)</label>
+<input type="number" id="loisir" value="150">
+<label>Sortie (€)</label>
+<input type="number" id="sortie" value="100">
+<label>Sport (€)</label>
+<input type="number" id="sport" value="50">
+<label>Abonnement (€)</label>
+<input type="number" id="abonnement" value="50">
+<label>Mensualité de crédit (€)</label>
+<input type="number" id="credit" value="200">
+<label>Autres (€)</label>
+<input type="number" id="autres" value="100">
 
 <button onclick="calculerBudget()">Calculer le budget</button>
 
@@ -59,53 +62,49 @@ function calculerBudget() {
     const logement = parseFloat(document.getElementById('logement').value);
     const alimentation = parseFloat(document.getElementById('alimentation').value);
     const transport = parseFloat(document.getElementById('transport').value);
-    const autres = parseFloat(document.getElementById('autres').value);
     const loisir = parseFloat(document.getElementById('loisir').value);
+    const sortie = parseFloat(document.getElementById('sortie').value);
+    const sport = parseFloat(document.getElementById('sport').value);
+    const abonnement = parseFloat(document.getElementById('abonnement').value);
+    const credit = parseFloat(document.getElementById('credit').value);
+    const autres = parseFloat(document.getElementById('autres').value);
 
-    const depenses = [logement, alimentation, transport, autres, loisir];
+    const depenses = [logement, alimentation, transport, loisir, sortie, sport, abonnement, credit, autres];
 
-    // Labels pour le graphique
-    const labels = ['Salaires','Autres revenus','Revenu total','Logement','Alimentation','Transport','Autres','Loisir','Reste'];
+    // Labels pour le waterfall
+    const labels = [
+        'Salaires', 'Autres revenus', 'Revenu total',
+        'Logement', 'Alimentation', 'Transport', 'Loisir', 'Sortie', 'Sport', 'Abonnement', 'Mensualité de crédit', 'Autres',
+        'Reste'
+    ];
 
     // Calcul du reste
     const reste = revenuTotal - depenses.reduce((a,b)=>a+b,0);
+    document.getElementById('result').innerText = `Reste après dépenses : ${Math.round(reste)} €`;
 
-    document.getElementById('result').innerText = 
-        `Reste après dépenses : ${Math.round(reste)} €`;
-
-    // Préparer les données pour waterfall
-    const data = [
-        salaires,
-        autresRevenus,
-        revenuTotal, // total des revenus
-        -logement,
-        -alimentation,
-        -transport,
-        -autres,
-        -loisir,
+    // Valeurs waterfall
+    const values = [
+        salaires, autresRevenus, revenuTotal,
+        -logement, -alimentation, -transport, -loisir, -sortie, -sport, -abonnement, -credit, -autres,
         reste
     ];
 
-    const backgroundColors = [
-        '#4caf50', // salaires
-        '#66bb6a', // autres revenus
-        '#2e7d32', // revenu total
-        '#f44336', // logement
-        '#f44336', // alimentation
-        '#f44336', // transport
-        '#f44336', // autres
-        '#f44336', // loisir
-        '#2196f3'  // reste
+    // Couleurs
+    const colors = [
+        '#4caf50','#66bb6a','#2e7d32', // revenus
+        '#f44336','#f44336','#f44336','#f44336','#f44336','#f44336','#f44336','#f44336','#f44336', // dépenses
+        '#2196f3' // reste
     ];
 
-    // Cumul pour waterfall
-    const totals = [];
-    let offset = 0;
-    for(let i=0;i<data.length;i++){
-        totals.push(offset);
-        offset += data[i];
+    // Offsets cumulés pour waterfall
+    const offsets = [];
+    let cumul = 0;
+    for(let i=0;i<values.length;i++){
+        offsets.push(cumul);
+        cumul += values[i];
     }
 
+    // Créer le chart
     const ctx = document.getElementById('budgetGraphique').getContext('2d');
     if(window.budgetChart) window.budgetChart.destroy();
 
@@ -115,16 +114,14 @@ function calculerBudget() {
             labels:labels,
             datasets:[
                 {
-                    label:'Montant (€)',
-                    data:data.map(val=>Math.abs(val)),
-                    backgroundColor:backgroundColors,
-                    stack:'stack1'
+                    label:'Offset',
+                    data: offsets,
+                    backgroundColor:'rgba(0,0,0,0)'
                 },
                 {
-                    label:'Offset',
-                    data:totals,
-                    backgroundColor:'rgba(0,0,0,0)',
-                    stack:'stack1'
+                    label:'Montant (€)',
+                    data: values.map(val=>Math.abs(val)),
+                    backgroundColor: colors
                 }
             ]
         },
